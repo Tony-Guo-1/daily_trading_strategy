@@ -1045,3 +1045,25 @@ class CNN:
                 verbose=self.verbose
                 )
             gc.collect()
+
+## Analysis Functions
+def calculate_cagr(nav):
+    '''
+    Calculates the annual percentage return
+    '''
+    years = len(nav) / 252
+    return (nav[-1] / nav[0]) ** (1 / years) - 1
+
+def calculate_max_drawdown(nav):
+    '''
+    Calculates maximum drawdown and duration
+    '''
+    peak = np.maximum.accumulate(nav)
+    drawdown = (nav - peak) / peak
+    max_dd = np.min(drawdown)
+
+    # Calculates maximum drawdown duration
+    drawdown_end = np.argmax(drawdown)
+    drawdown_start = np.where(nav[:drawdown_end] == peak[drawdown_end])[0][0]
+    max_dd_duration = drawdown_end - drawdown_start
+    return max_dd, max_dd_duration
