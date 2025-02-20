@@ -1067,3 +1067,41 @@ def calculate_max_drawdown(nav):
     drawdown_start = np.where(nav[:drawdown_end] == peak[drawdown_end])[0][0]
     max_dd_duration = drawdown_end - drawdown_start
     return max_dd, max_dd_duration
+
+def calculate_SR(total_asset, rfr):
+    '''
+    Calculates the Sharpe Ratio of the simulated strategy
+    Inputs:
+        total_asset: list of total assets on each day
+        rfr: list of risk-free rates on the same days as in total_asset
+    Output:
+        SR: Sharpe Ratio
+    '''
+    
+    daily_ret = [(total_asset[i] - total_asset[i-1]) / total_asset[i-1] for i in range(1, len(total_asset))]
+    assert len(daily_ret) == len(rfr)
+    excess_ret = [daily_ret[i] - rfr[i] for i in range(len(rfr))]
+    SR = np.mean(excess_ret) / np.std(excess_ret) * np.sqrt(252)
+    
+    return SR
+
+def calculate_H_L_SR(total_asset_dict, top_keys, bot_keys):
+    '''
+    Calculates the high minus low SR of the simulated strategy
+    Inputs:
+        total_asset_dict: dictionary of total assets for each day; 
+                          key is strategy and value is the list total assets on each day
+        top_keys: the key for the long strategy asset
+        bot_keys: the key for the short strategy asset
+    No output
+    '''
+    
+    assert len(top_keys) == len(bot_keys)
+    for i in range(len(top_keys)):
+        top_asset = total_asset_dict[top_keys[i]]
+        top_ret = np.array([(top_asset[i] - top_asset[i-1]) / top_asset[i-1] for i in range(1, len(top_asset))])
+        bot_asset = total_asset_dict[bot_keys[i]]
+        bot_ret = np.array([(bot_asset[i] - bot_asset[i-1]) / bot_asset[i-1] for i in range(1, len(bot_asset))])
+        H_L_ret = top_ret - bot_ret
+        SR = np.mean(H_L_ret) / np.std(H_L_ret) * np.sqrt(252)
+        print(f'{top_keys[i]} minus {bot_keys[i]} SR is {SR}')
