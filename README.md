@@ -8,7 +8,15 @@ The paper will be available soon on ArXiv and is submitted for publication.
 
 The study is done on two time periods roughly from 2005-2010 and 2019-2024. They intentionally include the 2008 financial crisis and the 2020 COVID pandemic. Use `download_and_process_raw_data_yfinance.ipynb` to download data from Yahoo Finance starting with a preliminary set of stocks and process the data. We only include the code and report the result in the later time period 2019-2024 on this page. 
 
-Cross-entropy is a common loss function for classification tasks. If $y_{\text{true}}, y_{\text{pred}}$ have probability distributions $p_i$ and $q_i$, respectively, then the cross-entropy of the true distribution relative to the predicted distribution is defined as $$\text{CE}(y_{\text{true}}, y_{\text{pred}}) =  \sum_i p_i \log q_i.$$ Roughly speaking, the novel loss function adds a weight to the cross-entropy formula based on each individual stock's next day return so that models trained with it will focus on detecting patterns leading to breakouts and breakdowns. The definition of the new loss is $$\mathrm{loss} = \mathrm{CE}(y_{\text{true}}, y_{\text{pred}}) * |r_{\text{cap}}|,$$ where $r_{\text{cap}}$ is the next day percentage return capped at 50%.
+Cross-entropy is a common loss function for classification tasks. If $y_{\text{true}}, y_{\text{pred}}$ have probability distributions $p_i$ and $q_i$, respectively, then the cross-entropy of the true distribution relative to the predicted distribution is defined as 
+
+$$\text{CE}(y_{\text{true}}, y_{\text{pred}}) =  \sum_i p_i \log q_i.$$
+
+Roughly speaking, the novel loss function adds a weight to the cross-entropy formula based on each individual stock's next day return so that models trained with it will focus on detecting patterns leading to breakouts and breakdowns. The definition of the new loss is 
+
+$$\mathrm{loss} = \mathrm{CE}(y_{\text{true}}, y_{\text{pred}}) * |r_{\text{cap}}|,$$
+
+where $r_{\text{cap}}$ is the next day percentage return capped at 50%.
 
 ## Portfolio Performance
 
