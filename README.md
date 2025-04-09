@@ -1,8 +1,8 @@
 # Pursuing Top Growth with Novel Loss Function
 
-This git repository includes the code used for the paper "Pursuing Top Growth with Novel Loss Function" by Ruoyu (Tony) Guo and Haochen Qiu. This study attempts to bring new ideas in cross-sectional asset pricing problems. We introduce a novel return-weighted loss function to train CNNs to detect top growth opportunities. Comparing with linear regression methods and traditional loss functions, we demonstrate the superiority of the novel loss function by simulating portfolio returns, drawdown analysis, and $t$-tests. This page will be continuously updated. Please refer to the paper for more details (link to be updated).
+This git repository includes the code used for the paper "Pursuing Top Growth with Novel Loss Function" by Ruoyu (Tony) Guo and Haochen Qiu. This study attempts to bring new ideas in cross-sectional asset pricing problems. We introduce a novel return-weighted loss function to train CNNs to detect top growth opportunities. Comparing with linear regression methods and traditional loss functions, we demonstrate the superiority of the novel loss function by simulating portfolio returns, drawdown analysis, and $t$-tests. This page will be continuously updated. Please refer to the paper for more details.
 
-The paper will be available soon on ArXiv and is submitted for publication.
+The paper is currently available on arxiv (https://arxiv.org/abs/2502.17493) and is submitted for publication.
 
 ## Novel Loss Function
 
