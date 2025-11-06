@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+import gc
 
 # For feature engineering
 from ta import add_all_ta_features
@@ -10,7 +11,7 @@ import random
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers, regularizers
-from tensorflow.keras.layers import Embedding, Flatten, Conv1D, BatchNormalization, LeakyReLU, Dropout, Dense, Add
+from tensorflow.keras.layers import Embedding, Flatten, Conv1D, BatchNormalization, ReLU, LeakyReLU, Dropout, Dense, Add
 from tensorflow.keras.layers import Concatenate, GlobalAveragePooling1D, AveragePooling1D, MaxPool1D
 from keras import backend as K
 
@@ -993,6 +994,161 @@ class CNN:
     def custom_loss_np(self, y_true, y_pred, ret_d):
         return np.mean(scce(y_true, y_pred) * np.minimum(abs(ret_d), 0.5))
 
+    def compile_model(self):
+
+        for i in range(self.num_models):
+            self.model_dict[i].compile(loss=None, optimizer=keras.optimizers.Adam(self.learning_rate))
+
+        # Just see one model architecture because all of them are the same
+        self.model_dict[0].summary()
+    
+    # Using the same code for training and retraining model
+    def train_model(self, x_train, y_train, ret_d_train, sector_train):
+        tf.random.set_seed(self.seed)
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+        for i in range(self.num_models):
+            history = self.model_dict[i].fit(
+                x=[y_train, x_train, ret_d_train, sector_train],
+                y=None,
+                batch_size=self.batch_size,
+                epochs=self.epochs,
+                callbacks=self.train_callback,
+                validation_split=self.validation_split,
+                verbose=self.verbose
+                )
+            gc.collect()
+    
+    def evaluate_model(self, x_train, y_train, ret_d_train, sector_train, x_test, y_test, ret_d_test, sector_test, batch_size):
+        for i in range(self.num_models):
+            y_pred = self.model_dict[i].predict([y_train, x_train, ret_d_train, sector_train], batch_size=batch_size)
+            print(f'Model {i} training loss {self.custom_loss_np(y_train, y_pred, ret_d_train)}')
+            y_pred = self.model_dict[i].predict([y_test, x_test, ret_d_test, sector_test], batch_size=batch_size)
+            print(f'Model {i} test loss {self.custom_loss_np(y_test, y_pred, ret_d_test)}')
+        
+    def retrain_model(self, x_train, y_train, ret_d_train, sector_train):
+        tf.random.set_seed(self.seed)
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+        
+        for i in range(self.num_models):
+            # Set learning rate back
+            K.set_value(self.model_dict[i].optimizer.learning_rate, self.retrain_learning_rate)
+
+            # Retrain models
+            history = self.model_dict[i].fit(
+                x=[y_train, x_train, ret_d_train, sector_train],
+                y=None,
+                batch_size=self.batch_size,
+                epochs=self.epochs,
+                callbacks=self.retrain_callback,
+                validation_split=self.validation_split,
+                verbose=self.verbose
+                )
+            gc.collect()
+
+## Attention class
+class Transformer:
+    
+    def __init__(self, input_shape, seed, **kwargs):
+        
+        self.__dict__.update(kwargs)
+        
+        self.input_shape = input_shape
+        self.seed = seed
+        self.train_callback = [keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=self.plateau_patience, min_lr=self.min_learning_rate),
+                               keras.callbacks.EarlyStopping(monitor="val_loss", patience=self.train_patience, min_delta=self.min_delta,
+                                                             restore_best_weights=True, verbose=1)]
+        self.retrain_callback = [keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=self.plateau_patience, min_lr=self.min_learning_rate),
+                                 keras.callbacks.EarlyStopping(monitor="val_loss", patience=self.retrain_patience, min_delta=self.min_delta,
+                                                               restore_best_weights=True, verbose=1)]
+        
+        self.model = self.build_model()
+  
+    def transformer_encoder(self, inputs):
+        
+        init = tf.keras.initializers.GlorotUniform(self.seed)
+        
+        # Attention and Normalization
+        x = layers.MultiHeadAttention(key_dim=self.head_size, num_heads=self.num_heads, dropout=self.dropout_attn,
+                                      kernel_initializer=init, bias_initializer='zeros')(inputs, inputs)
+        x = layers.Dropout(self.dropout_ffn, seed=self.seed)(x)
+        attn_output = layers.LayerNormalization(epsilon=self.layer_norm)(x + inputs)
+        x = attn_output
+
+        # Feed Forward Part
+        x = layers.Dense(self.ffn_dim, kernel_initializer=init, bias_initializer='zeros')(x)
+        x = ReLU()(x)
+        x = layers.Dropout(self.dropout_ffn, seed=self.seed)(x)
+        x = layers.Dense(attn_output.shape[-1], kernel_initializer=init, bias_initializer='zeros')(x)
+        x = ReLU()(x)
+        x = layers.Dropout(self.dropout_ffn, seed=self.seed)(x)
+        encoder_output = layers.LayerNormalization(epsilon=self.layer_norm)(attn_output + x)
+        
+        return encoder_output
+    
+    def build_base_model(self, output_dim):
+        
+        init = tf.keras.initializers.GlorotUniform(self.seed)
+        
+        input_layer = keras.Input(shape=self.input_shape)
+        x = input_layer
+
+        # Attention block
+        for _ in range(self.num_transformer_blocks):
+            x = self.transformer_encoder(x)
+
+        # Sector embedding block
+        embedding_layer = Embedding(input_dim=self.num_of_tokens, output_dim=self.embedding_dim,
+                                    )(self.sector_input)
+        embedding_layer = tf.tile(embedding_layer, [1, 20, 1])
+        x = Add()([x, embedding_layer])
+
+        assert len(self.filter_dims) == len(self.kernel_sizes)
+        assert len(self.filter_dims) == len(self.strides)
+        assert len(self.filter_dims) == len(self.paddings)
+
+        # CNN block
+        for i in range(len(self.filter_dims)):
+            x = Conv1D(filters=self.filter_dims[i], kernel_size=self.kernel_sizes[i], padding=self.paddings[i], strides=self.strides[i],
+                       kernel_initializer=init, 
+                       use_bias = False
+                       )(x)
+            x = BatchNormalization()(x)
+            x = LeakyReLU()(x)
+            x = Dropout(self.dropout_conv, seed=self.seed)(x)
+        
+        x = GlobalAveragePooling1D()(x)
+
+        # Dense block
+        for layer_dim in self.layer_dims:
+            x = Dense(layer_dim, activation=self.activation, kernel_initializer=init, bias_initializer='zeros')(x)
+            x = Dropout(self.dropout_dense, seed=self.seed)(x)
+        output_layer = Dense(output_dim, activation="softmax", kernel_initializer=init, use_bias=False)(x)
+        model = keras.models.Model(inputs=[self.target, input_layer, self.ret_d, self.sector_input], outputs=output_layer)
+        model.add_loss(self.custom_loss(self.target, output_layer, self.ret_d))
+        return model
+    
+    def custom_loss(self, y_true, y_pred, ret_d):
+        y_true = tf.cast(y_true, dtype=tf.float32)
+        loss = tf.reduce_mean(scce(y_true, y_pred) * tf.math.minimum(tf.abs(ret_d), 0.5))
+        return loss
+    
+    # Numpy version of loss
+    def custom_loss_np(self, y_true, y_pred, ret_d):
+        loss = np.mean(scce(y_true, y_pred) * np.minimum(abs(ret_d), 0.5))
+        return loss
+    
+    def build_model(self):
+        
+        self.model_dict = {}
+
+        for i in range(self.num_models):
+            
+            self.model_dict[i] = self.build_base_model(5)
+
+        return self.model_dict
+    
     def compile_model(self):
 
         for i in range(self.num_models):
