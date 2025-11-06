@@ -1,6 +1,6 @@
-# Pursuing Top Growth with Novel Loss Function
+# A Novel Loss Function for Deep Learning Based Daily Stock Trading System
 
-This git repository includes the code used for the paper "Pursuing Top Growth with Novel Loss Function" by Ruoyu (Tony) Guo and Haochen Qiu. This study attempts to bring new ideas in cross-sectional asset pricing problems. We introduce a novel return-weighted loss function to train CNNs to detect top growth opportunities. Comparing with linear regression methods and traditional loss functions, we demonstrate the superiority of the novel loss function by simulating portfolio returns, drawdown analysis, and $t$-tests. This page will be continuously updated. Please refer to the paper for more details.
+This git repository includes the code used for the paper "A Novel Loss Function for Deep Learning Based Daily Stock Trading System" by Ruoyu (Tony) Guo, Haochen Qiu, and Xuelun (Alan) Hou. This study attempts to bring new ideas in cross-sectional asset pricing problems. We introduce a novel return-weighted loss function to train deep learning algorithms to detect top growth opportunities. Comparing with linear regression methods and traditional loss functions, we demonstrate the superiority of our novel loss function by simulating portfolio returns, drawdown analysis, and $t$-tests. This page will be continuously updated. Please refer to the paper for more details.
 
 The paper is currently available on arxiv (https://arxiv.org/abs/2502.17493) and is submitted for publication.
 
