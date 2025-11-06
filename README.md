@@ -22,7 +22,7 @@ where $r_{\text{cap}}$ is the next day percentage return capped at 50%.
 
 We backtest the model performance over 1360 trading days (~5.4 years) and use the simple trading strategy of investing in the top 10 stocks each model recommends per day. We compare the novel loss function's performance against Mean Squared Error (MSE) and Cross-entropy (CE) loss. Best linear regression method and equal-weighted market benchmark are also included. The CNN portfolios reported are mixture-of-experts ensembles with dynamic weighting based on historical performance.
 
-![portfolio return of all models](/images/Cumulative Asset Value of All Models, 2019-2024.png)
+![portfolio return of all models](/images/Cumulative_Asset_Value_of_All_Models_2019-2024.png)
 
 We also combine 8 mixture-of-experts ensembles in equal-weighted manner to increase the portfolio holding capacity multiple times without sacrificing the Sharpe Ratio (SR) significantly.
 
