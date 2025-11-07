@@ -1219,9 +1219,15 @@ def calculate_max_drawdown(nav):
     max_dd = np.min(drawdown)
 
     # Calculates maximum drawdown duration
-    drawdown_end = np.argmax(drawdown)
-    drawdown_start = np.where(nav[:drawdown_end] == peak[drawdown_end])[0][0]
-    max_dd_duration = drawdown_end - drawdown_start
+    duration = 0
+    max_dd_duration = 0
+    for d in drawdown:
+        if d < 0:
+            duration += 1
+            max_dd_duration = max(max_dd_duration, duration)
+        else:
+            duration = 0
+    
     return max_dd, max_dd_duration
 
 def calculate_SR(total_asset, rfr):
